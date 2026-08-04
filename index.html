@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="ko">
+    <head>
+        <meta charset="UTF-8">
+        <title> hono websocket test </title>
+    </head>
+    <body>
+        <h2>hono websocket test</h2>
+        <input type="text" id="messageinput" placeholder="웹소켓 란">
+        <button onclick="sendMessage()">서버로 전송</button>
+
+        <h3>서버에서 받은 메세지</h3>
+        <div id="output" style="padding: 10px; background: #f0f0f0; min-height: 50px;"></div>
+
+        <h2>hono http fetch test</h2>
+        <input type="text" id="httpCodeInput" placeholder="코드">
+        <div style="display: flex; flex-direction: row;">
+            <a>case 1</a>
+            <input type="text" id="httpStdinInput1" placeholder="인풋">
+            <input type="text" id="httpStdoutInput1" placeholder="예상 출력">
+        </div>
+        <div style="display: flex; flex-direction: row;">
+            <a>case 2</a>
+            <input type="text" id="httpStdinInput2" placeholder="인풋">
+            <input type="text" id="httpStdoutInput2" placeholder="예상 출력">
+        </div>
+        <div style="display: flex; flex-direction: row;">
+            <a>case 3</a>
+            <input type="text" id="httpStdinInput3" placeholder="인풋">
+            <input type="text" id="httpStdoutInput3" placeholder="예상 출력">
+        </div>
+        <button onclick="sendHttpMessage()">서버로 전송</button>
+
+        <h3>서버에서 받은 메세지</h3>
+        <div id="httpOutput" style="padding: 10px; background: #f0f0f0; min-height: 50px;"></div>
+        <script>
+            function sendMessage(){
+                const input = document.getElementById("messageinput");
+                ws.send(input.value);
+                input.value = "";
+            }
+
+            // 1. 파일 임포트 대신, 서버의 "웹소켓 주소"를 적어줍니다.
+            // 서버 포트가 3000번이고 경로가 /ws 라면 아래 주소로 접속합니다.
+            const ws = new WebSocket('ws://localhost:3000/ws');
+
+            // 2. 서버와 연결이 성공했을 때 실행할 코드
+            ws.onopen = () => {
+                console.log('✅ Hono 서버와 성공적으로 연결되었습니다!');
+                
+                document.getElementById('output').innerText = "server process connected";
+            };
+
+            // 3. 서버가 답장(ws.send)을 보냈을 때 실행할 코드
+            ws.onmessage = (event) => {
+                const output = document.getElementById('output');
+                output.textContent += event.data;
+            };
+
+            ws.onclose = () => {
+                document.getElementById('output').innerText += "\n=== 서버 프로세스 연결 종료 ===";
+            };
+        </script>
+
+        <script>
+            async function sendHttpMessage(){
+                const cases = [];
+                for(let i = 1; i <= 3; i++){
+                    const stdin = document.getElementById(`httpStdinInput${i}`);
+                    const stdout = document.getElementById(`httpStdoutInput${i}`);
+                    cases.push({stdin: stdin.value, stdout: stdout.value});
+                }
+                const code = document.getElementById("httpCodeInput");
+                const response = await fetch('http://localhost:3000/submissions',{
+                    method:'POST',
+                    headers:{
+                        'content-type':'application/json'
+                    },
+                    body: JSON.stringify({code: code.value, cases, language: 'node'}),
+                });
+
+                const result = await response.json();
+                console.log(result);
+                document.getElementById('httpOutput').innerText = "";
+                for(const i in result.ret){
+                    const testCaseResult = result.ret[i];
+                    document.getElementById('httpOutput').innerText += `testcase ${parseInt(i) + 1}: ${testCaseResult.result}, output: ${testCaseResult.output}\n`;   
+                }
+            }
+        </script>
+    </body>
+</html>
