@@ -1,10 +1,11 @@
-name: Deploy
 
+name: Deploy
+ 
 on:
   push:
-    branches: [feature/5-actions-deploy]
+    branches: [main]
   workflow_dispatch:
-
+ 
 jobs:
   deploy:
     runs-on: ubuntu-latest
@@ -15,11 +16,27 @@ jobs:
           aws-access-key-id: ${{ secrets.DEPLOY_AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.DEPLOY_AWS_SECRET_ACCESS_KEY }}
           aws-region: ap-northeast-1
-
+ 
+      - name: Get instance ID by tag
+        id: get-instance
+        run: |
+          INSTANCE_ID=$(aws ec2 describe-instances \
+            --filters "Name=tag:Name,Values=code-runner-server" "Name=instance-state-name,Values=running" \
+            --query "Reservations[0].Instances[0].InstanceId" \
+            --output text)
+ 
+          if [ "$INSTANCE_ID" == "None" ] || [ -z "$INSTANCE_ID" ]; then
+            echo "::error::No running instance found with tag Name=code-runner-server. Is the EC2 instance currently on?"
+            exit 1
+          fi
+ 
+          echo "Found instance: $INSTANCE_ID"
+          echo "instance_id=$INSTANCE_ID" >> "$GITHUB_OUTPUT"
+ 
       - name: Send test command via SSM
         run: |
           aws ssm send-command \
-            --instance-ids "${{ secrets.EC2_INSTANCE_ID }}" \
+            --instance-ids "${{ steps.get-instance.outputs.instance_id }}" \
             --document-name "AWS-RunShellScript" \
             --parameters 'commands=["echo hello from GitHub Actions > /tmp/deploy-test.txt", "date >> /tmp/deploy-test.txt"]' \
             --query "Command.CommandId" --output text
