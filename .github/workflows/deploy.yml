@@ -1,25 +1,25 @@
 name: Deploy
-
-on: 
+ 
+on:
   push:
     branches: [main]
   workflow_dispatch:
-
+ 
 jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
-      -name: Configure AWS credentials
-       uses: aws-actions/configure-aws-credentials@v4
-       with:
-        aws-access-key-id: ${{secrets.DEPLOY_AWS_ACCESS_KEY_ID }}
-        aws-secret-access-key: ${{secrets.DEPLOY_AWS_SECRET_ACCESS_KEY }}
-        aws-region: ap-northeast-1
-      
-      -name: Send test command via SSM
-       run: |
-       aws ssm send-command \
-       --instance-ids "${{ secrets.EC2_INSTANCE_ID }}" \
-       --document-name "AWS-RunShellScript" \
-       --parameters 'command=["echo hello from GitHub Actions > /tmp/deploy-test.text", "date >> /tmp/deploy-test.txt"]' \
-       --query "Command.CommandId" --output text
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.DEPLOY_AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.DEPLOY_AWS_SECRET_ACCESS_KEY }}
+          aws-region: ap-northeast-1
+ 
+      - name: Send test command via SSM
+        run: |
+          aws ssm send-command \
+            --instance-ids "${{ secrets.EC2_INSTANCE_ID }}" \
+            --document-name "AWS-RunShellScript" \
+            --parameters 'commands=["echo hello from GitHub Actions > /tmp/deploy-test.txt", "date >> /tmp/deploy-test.txt"]' \
+            --query "Command.CommandId" --output text
