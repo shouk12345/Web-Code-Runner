@@ -38,7 +38,7 @@ jobs:
       - name: Pre-deploy health check (SSM agent online?)
         run: |
           PING_STATUS=$(aws ssm describe-instance-information \
-            --filters "Key=InstanceIds, values=${{steps.get-instance.outputs.instance_id}}" \
+            --filters "Key=InstanceIds, Values=${{steps.get-instance.outputs.instance_id}}" \
             --query "InstanceInformationList[0].PingStatus" \
             --output text)
 
