@@ -84,7 +84,7 @@ jobs:
               exit 0
             fi
 
-            if["$STATUS" == "Failed"] || ["$STATUS" == "Cancelled"] || ["$STATUS" == "TimeOut"]; then
+            if["$STATUS" == "Failed"] || ["$STATUS" == "Cancelled"] || ["$STATUS" == "TimeOut"]; then 
               echo "::error::Deploy command finished with status: $STATUS"
               aws ssm get-command-invocation \
                 --command-id "$COMMAND_ID" \
