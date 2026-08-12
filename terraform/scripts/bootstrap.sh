@@ -1,6 +1,11 @@
 #!/bin/bash
 set -euxo pipefail
 
+#debugging command
+#cloud-init status (display current execution state of cloud-init initialization status)
+#cat /var/log/code-runner-bootstrap.log (did the bootstrap process complete successfully?)
+#sudo bash /var/lib/cloud/instance/scripts/part-001 (Run script manually; -x prints each command as it executes)
+
 # Docker install
 apt-get update -y
 apt-get install -y ca-certificates curl gnupg
@@ -23,5 +28,26 @@ systemctl start docker
 # node.js install
 curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
 apt-get install -y nodejs
+
+# gVisor install
+curl -fsSL https://gvisor.dev/archive.key | gpg --dearmor -o /usr/share/keyrings/gvisor-archive-keyring.gpg
+
+echo "deb [signed-by=/usr/share/keyrings/gvisor-archive-keyring.gpg] https://storage.googleapis.com/gvisor/releases release main" | tee /etc/apt/sources.list.d/gvisor.list > /dev/null
+
+apt-get update -y
+apt-get install -y runsc
+
+mkdir -p /etc/docker
+cat > /etc/docker/daemon.json << 'DOCKERCONFIG'
+{
+    "runtimes":{
+        "runsc":{
+            "path": "/usr/bin/runsc"
+        }
+    }
+}
+DOCKERCONFIG
+
+systemctl restart docker
 
 echo "bootstrap complete" > /var/log/code-runner-bootstrap.log
