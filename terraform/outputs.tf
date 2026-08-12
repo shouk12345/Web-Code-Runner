@@ -5,7 +5,7 @@ output "instance_public_ip" {
 
 output "instance_id" {
   description = "Instance ID of the code-runner EC2 instance (used for SSM commands in CI/CD)"
-  value = aws_instance.code_runner.id
+  value       = aws_instance.code_runner.id
 }
 
 output "ssh_command" {
