@@ -26,6 +26,10 @@ class ExecutionPolicy {
         return `runner-${language}:latest`;
     }
 
+    static runtimeFor() : string | undefined{
+        return process.env.EXECUTION_RUNTIME == 'runsc' ? 'runsc' : undefined;
+    }
+
     static entrypointFor(language: Language): string[]{
         switch(language){
             case 'node':

@@ -8,6 +8,7 @@ interface ExecutionSpec{
     image: string;
     entrypoint: string[];
     limits: ResourceLimits;
+    runtime?: string;
 }
 
 interface ExecutionSession{

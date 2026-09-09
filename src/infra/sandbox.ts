@@ -36,11 +36,13 @@ class Sandbox implements ExecutionSession {
         const sandboxLogger = logger.child({containerName});
         const mountPath = toDockerPath(codePath);
         const {memoryMb, cpus, pidsLimit} = spec.limits;
+        const runtimeFlag = spec.runtime ? [`--runtime=${spec.runtime}`] : [];
 
         sandboxLogger.debug('sanbox_create_start', {image: spec.image, mountPath});
 
         const result = await runner.run('docker',[
             'run', '-d', '--rm', '--name', containerName,
+            ...runtimeFlag,
             '--network', 'none',
             '--read-only',
             '--tmpfs', '/tmp:rw,size=32m,noexec',

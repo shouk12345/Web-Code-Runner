@@ -16,7 +16,8 @@ class CodeJudge{
             code: submission.code,
             image: ExecutionPolicy.imageFor(submission.language),
             entrypoint: ExecutionPolicy.entrypointFor(submission.language),
-            limits
+            limits,
+            runtime: ExecutionPolicy.runtimeFor()
         };
 
         const session = await this.backend.openSession(spec, reqLogger);
