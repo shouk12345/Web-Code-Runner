@@ -32,17 +32,18 @@ class Sandbox implements ExecutionSession {
         logger: Logger
     ): Promise<Sandbox> {
         const containerName = `runner-${Date.now()}-${Math.random().toString(36).slice(2)}`;
-
         const sandboxLogger = logger.child({containerName});
         const mountPath = toDockerPath(codePath);
         const {memoryMb, cpus, pidsLimit} = spec.limits;
         const runtimeFlag = spec.runtime ? [`--runtime=${spec.runtime}`] : [];
+        const seccompFlag = spec.seccompProfile ? ['--security-opt',`seccomp=${spec.seccompProfile}`] : [];
 
         sandboxLogger.debug('sanbox_create_start', {image: spec.image, mountPath});
 
         const result = await runner.run('docker',[
             'run', '-d', '--rm', '--name', containerName,
             ...runtimeFlag,
+            ...seccompFlag,
             '--network', 'none',
             '--read-only',
             '--tmpfs', '/tmp:rw,size=32m,noexec',
@@ -117,3 +118,4 @@ class Sandbox implements ExecutionSession {
 }
 
 export {Sandbox, toDockerPath};
+
