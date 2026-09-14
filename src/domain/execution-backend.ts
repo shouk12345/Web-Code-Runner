@@ -9,6 +9,7 @@ interface ExecutionSpec{
     entrypoint: string[];
     limits: ResourceLimits;
     runtime?: string;
+    seccompProfile?: string;
 }
 
 interface ExecutionSession{

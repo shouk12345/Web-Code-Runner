@@ -1,4 +1,5 @@
 import type {Language} from '../schema.js'
+import path from 'path';
 
 // Dockerコンテナのリソース制限を定義するためのインターフェース
 interface ResourceLimits {
@@ -28,6 +29,10 @@ class ExecutionPolicy {
 
     static runtimeFor() : string | undefined{
         return process.env.EXECUTION_RUNTIME == 'runsc' ? 'runsc' : undefined;
+    }
+
+    static seccompProfileFor(language: Language) : string {
+        return path.join(process.cwd(),'src', 'infra', 'seccomp-profiles', `${language}.json`);
     }
 
     static entrypointFor(language: Language): string[]{
