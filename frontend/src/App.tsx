@@ -11,7 +11,34 @@ function App() {
   const [code, setCode] = useState('');
   const [cases, setCases] = useState<TestCase[]>([{stdin:'', stdout:''}]);
   const [results, setResults] = useState<JudgeResult[] | null>(null);
+  const [status, setStatus] = useState<'idle' | 'running' | 'error'>('idle');
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   
+  async function handleRun(){
+    setStatus('running');
+    setErrorMessage(null);
+    setResults(null);
+
+    try{
+      const res = await fetch('/submissions',{
+        method: 'POST',
+        headers: {'content-type':'application/json'},
+        body: JSON.stringify({code, cases, language}),
+      });
+
+      if(!res.ok){
+        throw new Error(`server error (status ${res.status})`);
+      }
+
+      const data = await res.json();
+      setResults(data.ret);
+      setStatus('idle');
+    } catch(err){
+      setStatus('error');
+      setErrorMessage(err instanceof Error ? err.message : 'unknown error');
+    }
+  }
+
   return (
     <div className="app">
       <header>
@@ -21,6 +48,13 @@ function App() {
 
       <CodeEditor language={language} value={code} onChange={setCode} />
       <TestCaseList cases={cases} onChange={setCases} />
+
+      <button onClick={handleRun} disabled={status==='running'}>
+        {status === 'running' ? 'running...' : 'run'}
+      </button>
+
+      {status === 'error' && <p className='error-message'>{errorMessage}</p>}
+
       <ResultList results={results} />
     </div>
   );
