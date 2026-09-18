@@ -5,4 +5,10 @@ import { defineConfig } from 'vite'
 export default defineConfig({
   plugins: [react()],
   base: '/Web-Code-Runner/',
+  server:{
+    proxy:{
+      '/languages': 'http://localhost:3000',
+      '/submissions': 'http://localhost:3000',
+    }
+  }
 })
