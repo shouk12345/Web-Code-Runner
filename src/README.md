@@ -12,6 +12,7 @@
 flowchart LR
     subgraph routes["routes/"]
         R[submission.route.ts]
+        LR[language.route.ts]
     end
     subgraph domain["domain/ — 純粋ロジック"]
         CJ[code-judge.ts]
@@ -37,6 +38,7 @@ flowchart LR
     R -.-> L
     CJ -.-> L
     SB -.-> L
+    LR -.->|静的データのみ、domain/infra非経由| EP
  
     style domain fill:#EAF0ED,stroke:#127C8C
     style infra fill:#F4E3C4,stroke:#D9871B
@@ -44,7 +46,7 @@ flowchart LR
     style logging fill:#fff,stroke:#C6D2CC
 ```
 | レイヤー | 責務 |
-|---|---|---|
+|---|---|
 | `routes/` | HTTP関連の処理：リクエスト解析、バリデーション、domain呼び出し、レスポンス整形 | 
 | `domain/` | 判定ルール、オーケストレーション、データモデル | 
 | `infra/` | 実際の実行メカニズム（現状はDocker） | 
@@ -99,6 +101,7 @@ sequenceDiagram
 | ファイル | 役割 |
 |---|---|
 | `submission.route.ts` | 入力検証、`CodeJudge`の呼び出し、例外（`ValidationError`、`ExecutionInfraError`）をHTTPステータスへマッピング。 |
+| `language.route.ts` | `ENABLED_LANGUAGES`（`LanguageSchema`のサブセット）を静的に返す。domain層のオーケストレーションは経由しない。 |
  
 ### `domain/`
 | ファイル | 役割 |
@@ -173,9 +176,120 @@ classDiagram
 2. `execution-policy.ts` — `limitsFor`、`imageFor`、`entrypointFor`にcaseを追加。
 3. 対応する`runner-<lang>:latest`のDockerfileを作成（最小構成 — 提出コードの実行に必要な範囲のみ）。
 4. `sandbox.ts` — `extensionFor`が新しいentrypointを正しい拡張子へマッピングするようにする。
-5. コンパイルが必要な言語の場合（C++など）：サンドボックスの`/tmp`は`noexec`でマウントされているため、コンパイル直後のバイナリをそこで実行できない。動作させるには明示的な設計判断が必要
+5. コンパイルが必要な言語の場合（C++など）：サンドボックスの`/tmp`は`noexec`でマウントされているため、コンパイル直後のバイナリをそこで実行できない。動作させるには明示的な設計判断が必要。
+6. `language.route.ts` — 実行可能になった段階で`ENABLED_LANGUAGES`（および`LANGUAGE_LABELS`）に追加。1〜5だけでは`LanguageSchema`上は有効でも`GET /languages`には現れず、フロントの選択肢に反映されない。
+
 ---
- 
+
+## API Reference
+
+### Endpoints
+
+| Method | Path | 用途 |
+|---|---|---|
+| `GET` | `/languages` | 実行可能な言語一覧の取得 |
+| `POST` | `/submissions` | コード提出・実行・判定 |
+
+---
+
+### `GET /languages`
+
+現在実行可能な言語のみを返す。`LanguageSchema`（バリデーション用）とは別に`ENABLED_LANGUAGES`で公開対象を絞っており、モック段階の言語（例: `cpp`）は含まれない。
+
+**Response**
+
+```json
+[
+  { "id": "node", "label": "Node.js" },
+  { "id": "python", "label": "Python" }
+]
+```
+
+---
+
+### `POST /submissions`
+
+提出されたコードを、テストケースごとに隔離されたコンテナ内で実行し、判定結果を返す。
+
+**Request**
+
+```json
+{
+  "code": "console.log(1 + 1)",
+  "language": "node",
+  "cases": [
+    { "stdin": "", "stdout": "2" }
+  ]
+}
+```
+
+| フィールド | 型 | 制約 |
+|---|---|---|
+| `code` | `string` | 最大20,000文字 |
+| `language` | `string` | `LanguageSchema`のenumのいずれか |
+| `cases` | `TestCase[]` | 1〜200件 |
+| `cases[].stdin` | `string` | 最大10,000文字 |
+| `cases[].stdout` | `string` | 最大10,000文字（期待される標準出力） |
+
+バリデーションはzodによる`RunRequestSchema`で実施。スキーマ違反時は`400`を返す。
+
+**Response**
+
+```json
+{
+  "ret": [
+    { "result": "AC", "output": "2\n" }
+  ]
+}
+```
+
+`ret`は`cases`と同じ順序・同じ件数の配列。各要素の`result`は以下のいずれか。
+
+| Verdict | 意味 | 判定条件 |
+|---|---|---|
+| `AC` | Accepted | 標準出力が期待値と一致（前後空白をtrim後） |
+| `WA` | Wrong Answer | 標準出力が期待値と不一致 |
+| `TLE` | Time Limit Exceeded | プロセスが`SIGKILL`で強制終了（タイムアウト） |
+| `RE` | Runtime Error | 非ゼロの終了コード |
+
+判定ロジックは`Judge.Check`（`src/domain/judge.ts`）を参照。
+
+---
+
+### リクエストフロー
+
+```mermaid
+sequenceDiagram
+    participant Client
+    participant Route as submission.route.ts
+    participant Backend as DockerExecutionBackend
+    participant Container
+    participant Judge
+
+    Client->>Route: POST /submissions
+    Route->>Route: RunRequestSchema.parse()
+    alt バリデーション失敗
+        Route-->>Client: 400
+    else 成功
+        loop 各テストケース
+            Route->>Backend: execute(code, case.stdin)
+            Backend->>Container: サンドボックス内で実行
+            Container-->>Backend: stdout / stderr / exitCode / signal
+            Backend->>Judge: Judge.Check(result, case.stdout)
+            Judge-->>Route: JudgeResult
+        end
+        Route-->>Client: 200 {ret: JudgeResult[]}
+    end
+```
+
+---
+
+### CORS
+
+（記入予定）
+
+---
+
 ## テスト
  
 | コマンド | 対象 | Dockerが必要か |
