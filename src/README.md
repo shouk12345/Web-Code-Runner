@@ -18,6 +18,7 @@ flowchart LR
         CJ[code-judge.ts]
         J[judge.ts]
         EP[execution-policy.ts]
+        SC[schema.ts]
         S[submission.ts]
     end
     subgraph infra["infra/ — アダプター"]
@@ -38,7 +39,7 @@ flowchart LR
     R -.-> L
     CJ -.-> L
     SB -.-> L
-    LR -.->|静的データのみ、domain/infra非経由| EP
+    LR -.->|静的データのみ、domain/infra非経由| SC
  
     style domain fill:#EAF0ED,stroke:#127C8C
     style infra fill:#F4E3C4,stroke:#D9871B
@@ -71,7 +72,7 @@ sequenceDiagram
     participant Judge as judge.ts
  
     Client->>Route: POST /submissions
-    Route->>Route: Zodでバリデーション
+    Route->>Route: schema.tsよりバリデーションチェック
     Route->>Sub: new Submission(data)
     Route->>CJ: judge(submission, logger)
     CJ->>Policy: limitsFor / imageFor / entrypointFor

@@ -69,46 +69,6 @@ sequenceDiagram
 
 ---
 
-## ローカル開発時のバックエンド接続
-
-開発サーバー起動時、`/submissions`・`/languages`宛のリクエストはViteの`server.proxy`設定でローカルのバックエンド（`localhost:3000`）へ転送される。本番（GitHub Pages）ではこのプロキシは存在しないため、フロントとバックエンドは別オリジン同士の通信になり、バックエンド側でのCORS設定が別途必要になる（詳細は`src/README.md`参照）。
-
-```ts
-// vite.config.ts
-server: {
-  proxy: {
-    '/submissions': 'http://localhost:3000',
-    '/languages': 'http://localhost:3000',
-  },
-},
-```
-
----
-
-## GitHub Pages対応
-
-GitHub Pagesは`https://<username>.github.io/<repo-name>/`というサブパス配下で公開されるため、ビルド時のアセットパスがルート相対のままだと崩れる。`base`をリポジトリ名に合わせて明示的に指定することで対応している。
-
-```ts
-// vite.config.ts
-export default defineConfig({
-  plugins: [react()],
-  base: '/repo-name/',
-})
-```
-
-デプロイフロー自体は`.github/workflows/README.md`を参照。
-
----
-
-## 既知の制約・今後の課題
-
-- **言語切り替え時のコード保持**: 言語を切り替えてもエディタの内容はクリアされない。誤操作によるコード消失を避けるための意図的な選択だが、異なる言語のコードがハイライトだけ切り替わって残る状態にはなりうる。UX改善は本番デモ完成後に着手予定。
-- **エラー種別の粒度**: ネットワーク断・非2xxレスポンス・JSONパース失敗を`errorMessage`として一括りに扱っている。タイムアウト等の細分化は未実装。
-- **C++対応**: バックエンド側で`cpp`は`LanguageSchema`上は有効だが`ENABLED_LANGUAGES`からは除外されているため、フロントの言語選択にも現れない。バックエンドのC++実行対応が完了次第、自動的に選択肢へ反映される想定（`LanguageSelect`はハードコードではなく`/languages`のレスポンスに追従するため）。
-
----
-
 ## Tech Stack
 
 - **Framework**: React

@@ -69,11 +69,34 @@ sequenceDiagram
 
 デバッグ時は以下を使う（`bootstrap.sh`冒頭にも記載）。
 
+ssh用
 | コマンド | 用途 |
 |---|---|
 | `cloud-init status` | cloud-initの現在の実行状態を確認。 |
 | `sudo bash /var/lib/cloud/instance/scripts/part-001` | スクリプトを手動で再実行。`-x`により各コマンドが実行時に出力されるため、どこで失敗したかを特定できる。実質もっとも使用頻度が高い。 |
 | `cat /var/log/code-runner-bootstrap.log` | 完了確認用。スクリプトの最終行でのみ書き込まれるため、失敗原因の特定には使えない。 |
+
+ssm用
+
+以下のテンプレートの `<COMMAND>` を表のコマンドに置き換えて実行する。
+
+```bash
+ID=$(aws ec2 describe-instances --filters "Name=tag:Name,Values=code-runner-server" "Name=instance-state-name,Values=running" --query "Reservations[0].Instances[0].InstanceId" --output text)
+CMD=$(aws ssm send-command --instance-ids $ID --document-name AWS-RunShellScript --parameters 'commands=["<COMMAND>"]' --query Command.CommandId --output text)
+aws ssm wait command-executed --command-id $CMD --instance-id $ID; aws ssm get-command-invocation --command-id $CMD --instance-id $ID --query "[Status,StandardOutputContent,StandardErrorContent]" --output text
+```
+
+| コマンド | 用途 |
+|---|---|
+| `cloud-init status --long` | cloud-initの現在の実行状態を確認。`status: error` の場合は `errors:` に失敗したモジュールが出る。 |
+| `tail -n 50 /var/log/cloud-init-output.log` | スクリプトの実行ログ。`-x` のトレースも記録されるため、最後に出力されたコマンドが失敗箇所。再実行せずに原因を特定できる。実質もっとも使用頻度が高い。 |
+| `cat /var/log/code-runner-bootstrap.log` | 完了確認用。スクリプトの最終行でのみ書き込まれるため、失敗原因の特定には使えない。 |
+| `docker info 2>&1 \| grep -i runtime` | gVisor が Docker ランタイムとして登録されているか確認。`Runtimes:` に `runsc` があれば登録済み。 |
+| `runsc --version` | gVisor バイナリのインストール確認。 |
+
+- `Status` が `Failed` の場合は `StandardErrorContent` を確認する。
+- rootで実行されるため `sudo` は不要。
+- `{{ }}` を含むコマンドはSSMのパラメータ構文と衝突するため使えない。
 
 ---
 
