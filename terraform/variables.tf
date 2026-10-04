@@ -3,12 +3,6 @@ variable "my_ip_cidr" {
   type        = string
 }
 
-variable "ssh_public_key_path" {
-  description = "Path to your local SSH public key (e.g. ~/.ssh/id_ed25519.pub)"
-  type        = string
-  default     = "~/.ssh/id_ed25519.pub"
-}
-
 variable "instance_type" {
   description = "EC2 instance type"
   type        = string

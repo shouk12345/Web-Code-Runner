@@ -50,4 +50,24 @@ DOCKERCONFIG
 
 systemctl restart docker
 
+# pm2 install
+npm install -g pm2 
+
+# Application clone & install
+mkdir -p /opt/code-runner
+chown ubuntu:ubuntu /opt/code-runner
+sudo -H -u ubuntu git clone https://github.com/shouk12345/Web-Code-Runner.git /opt/code-runner
+cd /opt/code-runner
+sudo -H -u ubuntu npm ci
+sudo -H -u ubuntu npm run build
+
+# Runner images (rebuilded at destroy/apply)
+docker build -t runner-node:latest ./docker/node
+#docker build -t runner-python:latest ./docker/python
+
+# pm2 start
+sudo -H -u ubuntu pm2 start dist/index.js --name code-runner
+env PATH=$$PATH:/usr/bin pm2 startup systemd -u ubuntu --hp /home/ubuntu
+sudo -H -u ubuntu pm2 save
+
 echo "bootstrap complete" > /var/log/code-runner-bootstrap.log

@@ -1,15 +1,7 @@
 resource "aws_security_group" "app" {
   name        = "code-runner-sg"
-  description = "SSH restricted to my IP, HTTP/S open"
+  description = "HTTP/S open"
   vpc_id      = aws_vpc.main.id
-
-  ingress {
-    description = "SSH from my IP only"
-    from_port   = 22
-    to_port     = 22
-    protocol    = "tcp"
-    cidr_blocks = [var.my_ip_cidr]
-  }
 
   ingress {
     description = "HTTP"
