@@ -18,11 +18,6 @@ data "aws_ami" "ubuntu" {
   }
 }
 
-resource "aws_key_pair" "deployer" {
-  key_name   = "code_runner_deployer"
-  public_key = file(var.ssh_public_key_path)
-}
-
 # SSM access for GitHub Actions deployment
 resource "aws_iam_role" "ssm_role" {
   name = "code-runner-ssm-role"
@@ -59,7 +54,6 @@ resource "aws_instance" "code_runner" {
   instance_type          = var.instance_type
   subnet_id              = aws_subnet.public.id
   vpc_security_group_ids = [aws_security_group.app.id]
-  key_name               = aws_key_pair.deployer.key_name
   iam_instance_profile   = aws_iam_instance_profile.ssm_profile.name
 
   user_data = file("${path.module}/scripts/bootstrap.sh")
