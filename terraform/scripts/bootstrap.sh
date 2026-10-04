@@ -63,7 +63,7 @@ sudo -H -u ubuntu npm run build
 
 # Runner images (rebuilded at destroy/apply)
 docker build -t runner-node:latest ./docker/node
-#docker build -t runner-python:latest ./docker/python
+docker build -t runner-python:latest ./docker/python
 
 # pm2 start
 sudo -H -u ubuntu pm2 start dist/index.js --name code-runner
