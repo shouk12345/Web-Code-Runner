@@ -1,4 +1,5 @@
 import {useEffect, useState} from "react";
+import {apiUrl} from "../api";
 
 type Language = {id : string, label: string};
 
@@ -12,7 +13,7 @@ function LanguageSelect({value, onChange}: Props){
     const [status, setStatus] = useState<'loading' | 'error' | 'ready'>('loading');
 
     useEffect(()=>{
-        fetch('/languages')
+        fetch(apiUrl('/languages'))
         .then((res)=>{
             if(!res.ok) throw new Error(`Status ${res.status}`);
             return res.json();
