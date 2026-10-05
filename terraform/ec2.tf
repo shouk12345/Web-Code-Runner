@@ -63,5 +63,11 @@ resource "aws_instance" "code_runner" {
     volume_type = "gp3"
   }
 
+  metadata_options {
+    http_endpoint               = "enabled"
+    http_tokens                 = "required"   # IMDSv2 強制 (トークンがない v1 要請は 401)
+    http_put_response_hop_limit = 1            # コンテナがメタデータに接近できなくする
+  }
+
   tags = { Name = "code-runner-server" }
 }
