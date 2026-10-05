@@ -5,6 +5,7 @@ import { CodeEditor } from './components/CodeEditor';
 import './App.css';
 import { type TestCase, TestCaseList } from './components/TestCaseList';
 import { ResultList, type JudgeResult } from './components/ResultList';
+import { apiUrl } from './api';
 
 function App() {
   const [language, setLanguage] = useState('node');
@@ -20,7 +21,7 @@ function App() {
     setResults(null);
 
     try{
-      const res = await fetch('/submissions',{
+      const res = await fetch(apiUrl('/submissions'),{
         method: 'POST',
         headers: {'content-type':'application/json'},
         body: JSON.stringify({code, cases, language}),
