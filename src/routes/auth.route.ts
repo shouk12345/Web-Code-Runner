@@ -22,7 +22,6 @@ function createAuthRoute(deps: AuthRouteDeps): Hono{
         if(!parsed.success) return c.json({error: 'Invalid request'}, 400);
 
         const record = await deps.authStore.findByKeyHash(hashApiKey(parsed.data.apiKey));
-        console.log(parsed.data.apiKey, "   ", hashApiKey(parsed.data.apiKey));
         if(!record) return c.json({error: 'Invalid API key'}, 401);
 
         const exp = Math.floor(Date.now() / 1000) + deps.tokenTtlSeconds;

@@ -21,9 +21,7 @@ if(!jwtSecret || jwtSecret.length < 32){
 
 // ----for local development
 const seeded = JSON.parse(process.env.AUTH_RECORDS ?? '[]');
-console.log(seeded);
 const authStore = new InMemoryAuthStore(seeded);
-console.log(authStore);
 //--------------------------
 
 const deps : AppDependencies = {
