@@ -8,7 +8,7 @@ if(!keyId) {
 }
 
 const apiKey = generateApiKey();
-const record: ApiKeyRecord = { keyId, KeyHash: hashApiKey(apiKey) };
+const record: ApiKeyRecord = { keyId, keyHash: hashApiKey(apiKey) };
 
 console.log('API key (shown once, store it safely):');
 console.log(apiKey);
