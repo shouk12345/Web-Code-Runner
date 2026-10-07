@@ -3,6 +3,7 @@
   "type": "module",
   "scripts": {
     "dev": "tsx watch src/index.ts",
+    "issue-key": "npm run build && node dist/cli/issue-key.js",
     "build": "tsc",
     "start": "node dist/index.js",
     "test": "vitest",
