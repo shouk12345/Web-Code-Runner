@@ -5,6 +5,7 @@ import {ConsoleLogger, type LogLevel} from './logging/logger.js'
 import {ProcessRunner} from './infra/process-runner.js'
 import  { DockerExecutionBackend } from './infra/docker-execution-backend.js';
 import { CodeJudge } from './domain/code-judge.js';
+import { InMemoryAuthStore } from './infra/in-memory-auth-store.js';
 
 const logLevel = (process.env.LOG_LEVEL as LogLevel) || 'info';
 const rootLogger = new ConsoleLogger({},logLevel);
@@ -13,9 +14,21 @@ const processRunner = new ProcessRunner(rootLogger);
 const executionBackend = new DockerExecutionBackend(processRunner);
 const codeJudge = new CodeJudge(executionBackend, rootLogger);
 
+const jwtSecret = process.env.JWT_SECRET;
+if(!jwtSecret || jwtSecret.length < 32){
+  throw new Error('JWT_SECRET must be set and at least 32 characters');
+}
+
+// ----for local development
+const seeded = JSON.parse(process.env.AUTH_RECORDS ?? '[]');
+const authStore = new InMemoryAuthStore(seeded);
+//--------------------------
+
 const deps : AppDependencies = {
     codeJudge,
     logger: rootLogger,
+    authStore,
+    jwtSecret
 };
 
 const app = createApp(deps);
