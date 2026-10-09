@@ -6,6 +6,7 @@ import { createApp } from "../../app.js";
 import { type Logger } from "../../logging/logger.js"; 
 import { InMemoryAuthStore } from "../../infra/in-memory-auth-store.js";
 import { CodeJudge } from '../../domain/code-judge.js';
+import { generateApiKey, hashApiKey } from "../../domain/api-key.js";
 
 const SECRET = 'x'.repeat(32);
 
@@ -83,6 +84,30 @@ describe('protectByDefault', ()=>{
         });
         const res = await app.request('/submissions', { method: 'POST' });
         expect(res.status).toBe(401);
+    });
+
+    it('exchanges an API for a token and passes the auth middleware', async ()=>{
+        const apiKey = generateApiKey();
+        const authStore = new InMemoryAuthStore([{keyId:'dev', keyHash:hashApiKey(apiKey)}]);
+
+        const codeJudge = {} as unknown as CodeJudge;
+        const logger = {info(){}, warn(){}, error(){}, debug(){}, child(){return logger;}} as unknown as Logger;
+        const app = createApp({codeJudge, logger, authStore, jwtSecret:SECRET});
+
+        const tokenRes = await app.request('/auth/token', {
+            method: 'POST',
+            headers: {'Content-Type':'application/json'},
+            body: JSON.stringify({apiKey}),
+        });
+        expect(tokenRes.status).toBe(200);
+        const {token} = await tokenRes.json();
+
+        const res = await app.request('/submissions', {
+            method:'POST',
+            headers:{Authorization: `Bearer ${token}`, 'Content-Type': 'application/json'},
+            body: JSON.stringify({}),
+        });
+        expect(res.status).toBe(400);
     });
     
 })
