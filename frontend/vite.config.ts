@@ -9,6 +9,7 @@ export default defineConfig({
     proxy:{
       '/languages': 'http://localhost:3000',
       '/submissions': 'http://localhost:3000',
+      '/auth': 'http://localhost:3000',
     }
   }
 })

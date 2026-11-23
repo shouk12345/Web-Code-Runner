@@ -182,3 +182,12 @@
     border-right-color: var(--border);
   }
 }
+
+.login-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-width: 360px;
+  margin: 80px auto;
+}
+.login-form .notice { color: #b45309; }
