@@ -5,7 +5,8 @@ import { CodeEditor } from './components/CodeEditor';
 import './App.css';
 import { type TestCase, TestCaseList } from './components/TestCaseList';
 import { ResultList, type JudgeResult } from './components/ResultList';
-import { apiUrl } from './api';
+import { authFetch, hasKey, AuthRequiredError } from './auth';
+import { LoginForm } from './components/LoginForm';
 
 function App() {
   const [language, setLanguage] = useState('node');
@@ -14,6 +15,8 @@ function App() {
   const [results, setResults] = useState<JudgeResult[] | null>(null);
   const [status, setStatus] = useState<'idle' | 'running' | 'error'>('idle');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [loggedIn, setLoggedIn] = useState(hasKey());
+  const [notice, setNotice] = useState<string | null>(null);
   
   async function handleRun(){
     setStatus('running');
@@ -21,7 +24,7 @@ function App() {
     setResults(null);
 
     try{
-      const res = await fetch(apiUrl('/submissions'),{
+      const res = await authFetch('/submissions',{
         method: 'POST',
         headers: {'content-type':'application/json'},
         body: JSON.stringify({code, cases, language}),
@@ -35,9 +38,26 @@ function App() {
       setResults(data.ret);
       setStatus('idle');
     } catch(err){
+      if (err instanceof AuthRequiredError) {
+        setLoggedIn(false);
+        setNotice('Session expired. Please enter your API key again.');
+        setStatus('idle');
+        return;
+      }
       setStatus('error');
       setErrorMessage(err instanceof Error ? err.message : 'unknown error');
     }
+  }
+
+  if(!loggedIn){
+    return (
+      <div className="app">
+        <LoginForm
+          notice={notice}
+          onLoggedIn={()=>{setNotice(null); setLoggedIn(true);}}
+          />
+      </div>
+    )
   }
 
   return (
